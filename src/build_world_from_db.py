@@ -23,7 +23,7 @@ for i in full_rooms_array:
     world_graph.add_vertex(i["room_id"], i["title"], i["description"], i["coordinates"],
                            i["elevation"], i["terrain"], i["items"], i["exits"], i["messages"])
 
-# print(world_graph.vertices[1])
+# print(world_graph.vertices)
 # ----------------- BUILD WORLD FROM DB --------------- #
 
 # ************ ALL PURPOSE MOVEMENT CODE BELOW ****************************************
@@ -147,7 +147,26 @@ def collect_treasure():
         else:
             print("You have nothing to sell")
 
-    # def pickup_item():
+    def pickup_item(items, weight):
+        if items > 0 and weight >= 9:
+            print('too heavy')
+            return weight
+        elif items > 0 and weight < 9:
+            treasure_data = '{"name":"treasure"}'
+            treasure_response = requests.post(
+                'https://lambda-treasure-hunt.herokuapp.com/api/adv/take/', headers=headers, data=treasure_data).json()
+            cooldown = treasure_response["cooldown"]
+            print(treasure_response)
+            print("cooldown: ", cooldown)
+            time.sleep(cooldown + .2)
+            status_response = requests.post(
+                'https://lambda-treasure-hunt.herokuapp.com/api/adv/status/', headers=headers).json()
+            cooldown = status_response["cooldown"]
+            time.sleep(cooldown + .2)
+
+            return status_response["encumbrance"]
+        else:
+            return weight
 
     move_to_shop()
     sell_treasure()
@@ -180,6 +199,14 @@ def collect_treasure():
                 for q in world_graph.vertices[current]["exits"]:
                     if world_graph.vertices[current]["exits"][q] == after:
                         modified_path.append(q)
+
+        status_response = requests.post(
+            'https://lambda-treasure-hunt.herokuapp.com/api/adv/status/', headers=headers).json()
+        cooldown = status_response["cooldown"]
+        time.sleep(cooldown + .2)
+        weight = status_response["encumbrance"]
+        print("weight", weight)
+
         while len(modified_path) > 0 and weight < 9:
             bfsdir = modified_path.pop(0)
             print('about to move in this direction: ', bfsdir, " to: ",
@@ -194,21 +221,16 @@ def collect_treasure():
             time.sleep(cooldown + .2)
             last_room_id = response["room_id"]
 
-            if len(response["items"]) > 0 and weight >= 9:
-                print('too heavy')
-            if len(response["items"]) > 0 and weight < 9:
-                treasure_data = '{"name":"treasure"}'
-                treasure_response = requests.post(
-                    'https://lambda-treasure-hunt.herokuapp.com/api/adv/take/', headers=headers, data=treasure_data).json()
-                cooldown = treasure_response["cooldown"]
-                print(treasure_response)
-                print("cooldown: ", cooldown)
-                time.sleep(cooldown + .2)
-                weight += 1
+            weight = pickup_item(len(response["items"]), weight)
 
         move_to_shop()
         sell_treasure()
 
+
+The_Peak_of_Mt._Holloway = 22
+Fully_Shrine = 374
+Linhs_Shrine = 461
+Wishing_well = 55
 
 # last_room_id_list = [146]
 # destination = [55]
