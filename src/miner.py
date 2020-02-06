@@ -27,10 +27,11 @@ def proof_of_work(last_proof, difficulty):
     print("Searching for next proof")
     proof = 0
     #  TODO: Your code here
-    while valid_proof(last_proof,proof,difficulty) is False:
-        proof = random.randint(1,99999999999)
+    while valid_proof(last_proof, proof, difficulty) is False:
+        proof = random.randint(1, 99999999999)
 
     return proof
+
 
 def valid_proof(last_proof, current_guess, difficulty):
     """
@@ -61,9 +62,9 @@ if __name__ == '__main__':
     # print("ID is", id)
     # f.close()
     headers = {
-    'Authorization': 'Token d3f3a0266824458c28f1e36c817636085dcc3106',
-    'Content-Type': 'application/json'
-}
+        'Authorization': 'Token 519bde8af1b66841d8183adcb62619787b1a198c',
+        'Content-Type': 'application/json'
+    }
 
     if id == 'NONAME\n':
         print("ERROR: You must change your name in `my_id.txt`!")
@@ -75,9 +76,11 @@ if __name__ == '__main__':
         data = r.json()
         time.sleep(data["cooldown"])
         print(data)
-        
-        new_proof = proof_of_work(data.get('proof'),data["difficulty"])
+
+        new_proof = proof_of_work(data.get('proof'), data["difficulty"])
         post_data = {"proof": new_proof}
 
-        r2 = requests.post(url=node + "/bc/mine", json=post_data, headers=headers).json()
+        r2 = requests.post(url=node + "/bc/mine",
+                           json=post_data, headers=headers).json()
         time.sleep(r2["cooldown"])
+        print(r2)

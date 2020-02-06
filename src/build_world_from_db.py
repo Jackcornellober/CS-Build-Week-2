@@ -9,62 +9,76 @@ from threading import Timer
 import time
 
 headers = {
-'Authorization': 'Token d3f3a0266824458c28f1e36c817636085dcc3106',
-'Content-Type': 'application/json'
+    'Authorization': 'Token 519bde8af1b66841d8183adcb62619787b1a198c',
+    'Content-Type': 'application/json'
 }
 
 # ----------------- BUILD WORLD FROM DB --------------- #
 world_graph = Graph()
 
-full_rooms_array = requests.get('https://bw2rooms.herokuapp.com/api/room/getAllRooms').json()
+full_rooms_array = requests.get(
+    'https://bw2rooms.herokuapp.com/api/room/getAllRooms').json()
 
 for i in full_rooms_array:
-    world_graph.add_vertex(i["room_id"], i["title"], i["description"], i["coordinates"], i["elevation"], i["terrain"], i["items"], i["exits"], i["messages"])
+    world_graph.add_vertex(i["room_id"], i["title"], i["description"], i["coordinates"],
+                           i["elevation"], i["terrain"], i["items"], i["exits"], i["messages"])
 
-# print(world_graph.vertices[1])
+# print(world_graph.vertices)
 # ----------------- BUILD WORLD FROM DB --------------- #
 
 # ************ ALL PURPOSE MOVEMENT CODE BELOW ****************************************
-last_room_id_list = [55]
 
-destination = [129]
 
-weight = 0
-# prayed = 0
-# while prayed < 4:
-# prayed += 1
-last_room_id = last_room_id_list.pop(0)
-path = world_graph.walk_to_room(last_room_id,destination.pop(0))
+def all_purpose_movement(last_room_id_list, destination, pray):
 
-print(path)
-modified_path = []
-for index,i in enumerate(path):
-    if index < len(path) - 1:
-        current = i
-        after = path[index+1]
-        for q in world_graph.vertices[current]["exits"]:
-            if world_graph.vertices[current]["exits"][q] == after:
-                modified_path.append(q)
-while len(modified_path) > 0:
-    bfsdir = modified_path.pop(0)
-    print('about to move in this direction: ', bfsdir, " to: ", world_graph.vertices[last_room_id]["exits"][bfsdir])
-    if world_graph.vertices[last_room_id]["exits"][bfsdir] != '?':
-        payloads = {"direction": bfsdir, "next_room_id": str(world_graph.vertices[last_room_id]["exits"][bfsdir])}
-    else:
-        payloads = {"direction": bfsdir}
-    response = requests.post('https://lambda-treasure-hunt.herokuapp.com/api/adv/move/', data=json.dumps(payloads), headers=headers).json()
-    print(response)
-    cooldown = response["cooldown"]
-    print("cooldown: ", cooldown)
-    time.sleep(cooldown + .2)
-    last_room_id = response["room_id"]
+    def move():
+        last_room_id = last_room_id_list.pop(0)
+        path = world_graph.walk_to_room(last_room_id, destination.pop(0))
+
+        print(path)
+        modified_path = []
+        for index, i in enumerate(path):
+            if index < len(path) - 1:
+                current = i
+                after = path[index+1]
+                for q in world_graph.vertices[current]["exits"]:
+                    if world_graph.vertices[current]["exits"][q] == after:
+                        modified_path.append(q)
+        while len(modified_path) > 0:
+            bfsdir = modified_path.pop(0)
+            print('about to move in this direction: ', bfsdir, " to: ",
+                  world_graph.vertices[last_room_id]["exits"][bfsdir])
+            if world_graph.vertices[last_room_id]["exits"][bfsdir] != '?':
+                payloads = {"direction": bfsdir, "next_room_id": str(
+                    world_graph.vertices[last_room_id]["exits"][bfsdir])}
+            else:
+                payloads = {"direction": bfsdir}
+            response = requests.post('https://lambda-treasure-hunt.herokuapp.com/api/adv/move/',
+                                     data=json.dumps(payloads), headers=headers).json()
+            print(response)
+            cooldown = response["cooldown"]
+            print("cooldown: ", cooldown)
+            time.sleep(cooldown + .2)
+            last_room_id = response["room_id"]
+
+    # weight = 0
+
+    if pray is True:
+        prayed = 0
+        while prayed < 4:
+            prayed += 1
+            move()
 
         #  *********** AUTO-PRAYER CODE BELOW ******************
-    # prayer_response = requests.post('https://lambda-treasure-hunt.herokuapp.com/api/adv/pray/', headers=headers).json()
-    # cooldown = prayer_response["cooldown"]
-    # print(prayer_response)
-    # print("cooldown: ", cooldown)
-    # time.sleep(cooldown + .2)
+        prayer_response = requests.post(
+            'https://lambda-treasure-hunt.herokuapp.com/api/adv/pray/', headers=headers).json()
+        cooldown = prayer_response["cooldown"]
+        print(prayer_response)
+        print("cooldown: ", cooldown)
+        time.sleep(cooldown + .2)
+
+    else:
+        move()
 
         #  *********** TREASURE GATHERING CODE BELOW ******************
         # if len(response["items"]) > 0 and weight >= 8:
@@ -76,8 +90,6 @@ while len(modified_path) > 0:
         #     print(treasure_response)
         #     print("cooldown: ", cooldown)
         #     time.sleep(cooldown + .2)
-
-    
 
 
 # def dash(start,end):
@@ -94,7 +106,7 @@ while len(modified_path) > 0:
 
 # dash(499,242)
 
-# rooms of interest: 498 - Sandofsky (recall) ||| 486 - unknown ||| 55 - wishing well ||| 
+# rooms of interest: 498 - Sandofsky (recall) ||| 486 - unknown ||| 55 - wishing well |||
 
 # last_room_id_list = [0]
 
@@ -102,86 +114,125 @@ while len(modified_path) > 0:
 
 ##### --------------- AUTO TREASURE FIND/SELL BELOW -------------------- #####
 
-# response = requests.post('https://lambda-treasure-hunt.herokuapp.com/api/adv/recall/', headers=headers).json()
-# print('recalling to room 0')
-# cooldown = response["cooldown"]
-# time.sleep(cooldown + .2)
-# data = '{"direction":"w", "next_room_id":"1"}'
-# response = requests.post('https://lambda-treasure-hunt.herokuapp.com/api/adv/move/', data=data, headers=headers).json()
-# print('walking from room 0 to the shop, about to start selling')
-# cooldown = response["cooldown"]
-# time.sleep(cooldown + .2)
+def collect_treasure():
 
-# while True:
-#     weight = 0
-#     length = 0
-#     while length < 38:
-#         last_room_id_list = [1]
-#         destination = random.randint(100,499)
-#         last_room_id = last_room_id_list.pop(0)
-#         path1 = world_graph.walk_to_room(last_room_id,destination)
+    def move_to_shop():
+        response = requests.post(
+            'https://lambda-treasure-hunt.herokuapp.com/api/adv/recall/', headers=headers).json()
+        print('recalling to room 0')
+        cooldown = response["cooldown"]
+        time.sleep(cooldown + .2)
+        data = '{"direction":"w", "next_room_id":"1"}'
+        response = requests.post(
+            'https://lambda-treasure-hunt.herokuapp.com/api/adv/move/', data=data, headers=headers).json()
+        print('walking from room 0 to the shop, about to start selling')
+        cooldown = response["cooldown"]
+        time.sleep(cooldown + .2)
 
-#         last_room_id_list2 = [destination]
-#         destination2 = random.randint(100,499)
-#         last_room_id2 = last_room_id_list2.pop(0)
-#         path2 = world_graph.walk_to_room(last_room_id2,destination2)
-#         path = path1 + path2[1:]
-        
+    def sell_treasure():
+        status_response = requests.post(
+            'https://lambda-treasure-hunt.herokuapp.com/api/adv/status/', headers=headers).json()
+        sell_times = len(status_response["inventory"])
+        data = '{"name":"treasure", "confirm":"yes"}'
+        cooldown = status_response["cooldown"]
+        time.sleep(cooldown + .2)
+        print(f"We have {sell_times} items to sell")
+        if sell_times > 0:
+            for x in range(sell_times):
+                response = requests.post(
+                    'https://lambda-treasure-hunt.herokuapp.com/api/adv/sell/', headers=headers, data=data).json()
+                print(response)
+                cooldown = response["cooldown"]
+                time.sleep(cooldown + .2)
+        else:
+            print("You have nothing to sell")
 
-#         length = len(path)
-#     print(path1)
-#     print(path2)
-#     print(path)
+    def pickup_item(items, weight):
+        if items > 0 and weight >= 9:
+            print('too heavy')
+            return weight
+        elif items > 0 and weight < 9:
+            treasure_data = '{"name":"treasure"}'
+            treasure_response = requests.post(
+                'https://lambda-treasure-hunt.herokuapp.com/api/adv/take/', headers=headers, data=treasure_data).json()
+            cooldown = treasure_response["cooldown"]
+            print(treasure_response)
+            print("cooldown: ", cooldown)
+            time.sleep(cooldown + .2)
+            status_response = requests.post(
+                'https://lambda-treasure-hunt.herokuapp.com/api/adv/status/', headers=headers).json()
+            cooldown = status_response["cooldown"]
+            time.sleep(cooldown + .2)
 
-#     modified_path = []
-#     for index,i in enumerate(path):
-#         if index < len(path) - 1:
-#             current = i
-#             after = path[index+1]
-#             for q in world_graph.vertices[current]["exits"]:
-#                 if world_graph.vertices[current]["exits"][q] == after:
-#                     modified_path.append(q)
-#     while len(modified_path) > 0 and weight < 9:
-#         bfsdir = modified_path.pop(0)
-#         print('about to move in this direction: ', bfsdir, " to: ", world_graph.vertices[last_room_id]["exits"][bfsdir])
-#         payloads = {"direction": bfsdir, "next_room_id": str(world_graph.vertices[last_room_id]["exits"][bfsdir])}
-#         response = requests.post('https://lambda-treasure-hunt.herokuapp.com/api/adv/move/', data=json.dumps(payloads), headers=headers).json()
-#         cooldown = response["cooldown"]
-#         print(response)
-#         print("cooldown: ", cooldown)
-#         time.sleep(cooldown + .2)
-#         last_room_id = response["room_id"]
+            return status_response["encumbrance"]
+        else:
+            return weight
 
-#         if len(response["items"]) > 0 and weight >= 9:
-#             print('too heavy')
-#         if len(response["items"]) > 0 and weight < 9:
-#             treasure_data = '{"name":"treasure"}'
-#             treasure_response = requests.post('https://lambda-treasure-hunt.herokuapp.com/api/adv/take/', headers=headers, data=treasure_data).json()
-#             cooldown = treasure_response["cooldown"]
-#             print(treasure_response)
-#             print("cooldown: ", cooldown)
-#             time.sleep(cooldown + .2)
-#             weight += 1
-#     response = requests.post('https://lambda-treasure-hunt.herokuapp.com/api/adv/recall/', headers=headers).json()
-#     print('recalling to room 0')
-#     cooldown = response["cooldown"]
-#     time.sleep(cooldown + .2)
-#     data = '{"direction":"w", "next_room_id":"1"}'
-#     response = requests.post('https://lambda-treasure-hunt.herokuapp.com/api/adv/move/', data=data, headers=headers).json()
-#     print('walking from room 0 to the shop, about to start selling')
-#     cooldown = response["cooldown"]
-#     time.sleep(cooldown + .2)
-#     data = '{"name":"treasure", "confirm":"yes"}'
-#     weight_for_selling = 10
-#     while weight_for_selling > 0:
-#         response = requests.post('https://lambda-treasure-hunt.herokuapp.com/api/adv/sell/', headers=headers, data=data).json()
-#         print(response)
-#         cooldown = response["cooldown"]
-#         weight_for_selling -= 1
-#         time.sleep(cooldown + .2)
-        
+    move_to_shop()
+    sell_treasure()
+
+    while True:
+        weight = 0
+        length = 0
+        while length < 38:
+            last_room_id_list = [1]
+            destination = random.randint(100, 499)
+            last_room_id = last_room_id_list.pop(0)
+            path1 = world_graph.walk_to_room(last_room_id, destination)
+
+            last_room_id_list2 = [destination]
+            destination2 = random.randint(100, 499)
+            last_room_id2 = last_room_id_list2.pop(0)
+            path2 = world_graph.walk_to_room(last_room_id2, destination2)
+            path = path1 + path2[1:]
+
+            length = len(path)
+        print(path1)
+        print(path2)
+        print(path)
+
+        modified_path = []
+        for index, i in enumerate(path):
+            if index < len(path) - 1:
+                current = i
+                after = path[index+1]
+                for q in world_graph.vertices[current]["exits"]:
+                    if world_graph.vertices[current]["exits"][q] == after:
+                        modified_path.append(q)
+
+        status_response = requests.post(
+            'https://lambda-treasure-hunt.herokuapp.com/api/adv/status/', headers=headers).json()
+        cooldown = status_response["cooldown"]
+        time.sleep(cooldown + .2)
+        weight = status_response["encumbrance"]
+        print("weight", weight)
+
+        while len(modified_path) > 0 and weight < 9:
+            bfsdir = modified_path.pop(0)
+            print('about to move in this direction: ', bfsdir, " to: ",
+                  world_graph.vertices[last_room_id]["exits"][bfsdir])
+            payloads = {"direction": bfsdir, "next_room_id": str(
+                world_graph.vertices[last_room_id]["exits"][bfsdir])}
+            response = requests.post('https://lambda-treasure-hunt.herokuapp.com/api/adv/move/',
+                                     data=json.dumps(payloads), headers=headers).json()
+            cooldown = response["cooldown"]
+            print(response)
+            print("cooldown: ", cooldown)
+            time.sleep(cooldown + .2)
+            last_room_id = response["room_id"]
+
+            weight = pickup_item(len(response["items"]), weight)
+
+        move_to_shop()
+        sell_treasure()
 
 
+The_Peak_of_Mt._Holloway = 22
+Fully_Shrine = 374
+Linhs_Shrine = 461
+Wishing_well = 55
 
-
-
+# last_room_id_list = [146]
+# destination = [55]
+# all_purpose_movement(last_room_id_list, destination, False)
+collect_treasure()
