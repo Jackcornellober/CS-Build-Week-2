@@ -5,7 +5,7 @@
 import sys
 from cpu import *
 
-def main(argv):
+def main(args):
     """Main."""
 
     # if len(argv) != 2:
@@ -13,11 +13,12 @@ def main(argv):
     #     return 1
 
     cpu = CPU()
-
-    cpu.load(argv[1])
+    # print(argv)
+    cpu.load('.\\clue.ls8')
     cpu.run()
-
     return 0
 
+    
+
 if __name__ == "__main__":
-    sys.exit(main(sys.argv))
+    main(['ls8.py', '.\\clue.ls8'])
