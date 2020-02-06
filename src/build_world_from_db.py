@@ -7,9 +7,12 @@ import random
 from util import Graph, add_explored
 from threading import Timer
 import time
+import ls8
+import sys, io
+from token import TOKEN
 
 headers = {
-    'Authorization': 'Token 519bde8af1b66841d8183adcb62619787b1a198c',
+    'Authorization': TOKEN,
     'Content-Type': 'application/json'
 }
 
@@ -232,7 +235,50 @@ Fully_Shrine = 374
 Linhs_Shrine = 461
 Wishing_well = 55
 
+def auto_miner(starting_location,first_coin_location):
+last_room_id_list = [starting_location]
+
+destination = [first_coin_location]
+
+going_to_mine = True
+
+while True:
+    all_purpose_movement(last_room_id_list, destination, False)
+        # ------- AUTO MINING CODE BELOW -------
+    if going_to_mine == True:
+        miner.run()
+        response = requests.post('https://lambda-treasure-hunt.herokuapp.com/api/adv/recall/', headers=headers).json()
+        print('recalling to room 0')
+        cooldown = response["cooldown"]
+        time.sleep(cooldown + .05)
+        last_room_id_list = [0]
+        destination = [55]
+    elif going_to_mine == False:
+        print('making request')
+        examine_data = '{"name":"well"}'
+        examine_response = requests.post('https://lambda-treasure-hunt.herokuapp.com/api/adv/examine/', headers=headers, data=examine_data).json()
+        code = examine_response["description"][41:]
+        # print(examine_response)
+        cooldown = examine_response["cooldown"]
+        print("cooldown: ", cooldown)
+        # print(code)
+        f = open("clue.ls8", "w")
+        f.write(code)
+        f.close()
+        time.sleep(cooldown + .05)
+        stdout = sys.stdout
+        sys.stdout = io.StringIO()
+        ls8.main(['ls8.py', '.\\clue.ls8'])
+        output = sys.stdout.getvalue()
+        sys.stdout = stdout
+        print('output: ', output)
+        magic_room = int(output[23:])
+        last_room_id_list = [55]
+        destination = [magic_room]
+    going_to_mine = not going_to_mine
+
+
 # last_room_id_list = [146]
 # destination = [55]
 # all_purpose_movement(last_room_id_list, destination, False)
-collect_treasure()
+# collect_treasure()
